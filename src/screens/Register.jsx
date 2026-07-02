@@ -1,14 +1,41 @@
 import React from "react";
+import { useState } from "react";
 import {
-    ScrollView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+// Note: we no longer need to import OTP here — we navigate by route
+// name (string), not by passing the component directly
 
 function Register() {
+
+  const navigation = useNavigation();
+
+  const [data, setData] = useState({
+    fullname: '',
+    phone_no: '',
+    company_name: '',
+    city: '',
+    password: '' // new — collected on this screen
+  });
+
+  // Small helper so we don't repeat this pattern for every field —
+  // updates one field in `data` while keeping the rest untouched
+  const handleChange = (field, value) => {
+    setData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleOnPress = () => {
+    // We pass phone_no along so the OTP screen can pre-fill it —
+    // the user will still be able to edit it there for verification.
+    navigation.navigate("Otp", { phone_no: data.phone_no });
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -28,6 +55,8 @@ function Register() {
         <TextInput
           placeholder="Enter your full name"
           style={styles.input}
+          value={data.fullname}
+          onChangeText={(text) => handleChange('fullname', text)}
         />
       </View>
 
@@ -38,6 +67,21 @@ function Register() {
           placeholder="+91 98765XXXXX"
           keyboardType="phone-pad"
           style={styles.input}
+          value={data.phone_no}
+          onChangeText={(text) => handleChange('phone_no', text)}
+        />
+      </View>
+
+      {/* Password — new field */}
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          placeholder="Create a password"
+          style={styles.input}
+          value={data.password}
+          onChangeText={(text) => handleChange('password', text)}
+          secureTextEntry
+          autoCapitalize="none"
         />
       </View>
 
@@ -47,6 +91,8 @@ function Register() {
         <TextInput
           placeholder="Enter company name"
           style={styles.input}
+          value={data.company_name}
+          onChangeText={(text) => handleChange('company_name', text)}
         />
       </View>
 
@@ -56,21 +102,13 @@ function Register() {
         <TextInput
           placeholder="Enter your city"
           style={styles.input}
-        />
-      </View>
-
-      {/* Password */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          placeholder="Create a password"
-          secureTextEntry
-          style={styles.input}
+          value={data.city}
+          onChangeText={(text) => handleChange('city', text)}
         />
       </View>
 
       {/* Create Account Button */}
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleOnPress}>
         <Text style={styles.buttonText}>Create Account</Text>
       </TouchableOpacity>
 
@@ -89,21 +127,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F6F8",
     paddingHorizontal: 20,
     paddingTop: 60,
+    overflow: "hidden"
   },
-
   title: {
     fontSize: 32,
     fontWeight: "700",
     color: "#1E1E1E",
   },
-
   subtitle: {
     fontSize: 15,
     color: "#6B7280",
     marginTop: 6,
     marginBottom: 25,
   },
-
   profileCircle: {
     width: 110,
     height: 110,
@@ -115,23 +151,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 30,
   },
-
   plus: {
     fontSize: 40,
     color: "#9CA3AF",
   },
-
   inputContainer: {
     marginBottom: 18,
   },
-
   label: {
     fontSize: 15,
     color: "#4B5563",
     marginBottom: 8,
     fontWeight: "500",
   },
-
   input: {
     height: 55,
     backgroundColor: "#FFFFFF",
@@ -141,7 +173,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
   },
-
   button: {
     height: 58,
     backgroundColor: "#F2994A",
@@ -150,13 +181,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-
   buttonText: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
   },
-
   footer: {
     marginTop: 25,
     textAlign: "center",
