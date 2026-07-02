@@ -88,7 +88,30 @@ function Register() {
         />
       </View>
 
-      {/* Password - with show/hide toggle */}
+      
+      {/* Company Name */}
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Firm / Company Name</Text>
+        <TextInput
+          placeholder="Enter company name"
+          style={styles.input}
+          value={data.company_name}
+          onChangeText={(text) => handleChange('company_name', text)}
+        />
+      </View>
+
+      {/* City */}
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>City</Text>
+        <TextInput
+          placeholder="Enter your city"
+          style={styles.input}
+          value={data.city}
+          onChangeText={(text) => handleChange('city', text)}
+        />
+      </View>
+
+    {/* Password - with show/hide toggle */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Password</Text>
         <View style={styles.passwordWrapper}>
@@ -111,27 +134,6 @@ function Register() {
         </View>
       </View>
 
-      {/* Company Name */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Firm / Company Name</Text>
-        <TextInput
-          placeholder="Enter company name"
-          style={styles.input}
-          value={data.company_name}
-          onChangeText={(text) => handleChange('company_name', text)}
-        />
-      </View>
-
-      {/* City */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>City</Text>
-        <TextInput
-          placeholder="Enter your city"
-          style={styles.input}
-          value={data.city}
-          onChangeText={(text) => handleChange('city', text)}
-        />
-      </View>
 
       {/* Create Account Button */}
       <TouchableOpacity style={styles.button} onPress={handleOnPress}>
