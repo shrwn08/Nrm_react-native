@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-// Note: we no longer need to import OTP here — we navigate by route
+
 // name (string), not by passing the component directly
 
 function Register() {
@@ -18,22 +18,25 @@ function Register() {
 
   const [data, setData] = useState({
     fullname: '',
+    email: '',
     phone_no: '',
+    password: '',
     company_name: '',
-    city: '',
-    password: '' // new — collected on this screen
+    city: ''
   });
 
-  // Small helper so we don't repeat this pattern for every field —
-  // updates one field in `data` while keeping the rest untouched
+  // Controls whether the password field masks its text or shows it plainly
+  const [showPassword, setShowPassword] = useState(false);
+
+  
   const handleChange = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleOnPress = () => {
-    // We pass phone_no along so the OTP screen can pre-fill it —
+    // We pass phone_no along so the OTP screen can pre-fill it -
     // the user will still be able to edit it there for verification.
-    navigation.navigate("Otp", { phone_no: data.phone_no });
+    navigation.navigate("Otp", { phone_no: data.phone_no, email: data.email });
   };
 
   return (
@@ -60,6 +63,19 @@ function Register() {
         />
       </View>
 
+      {/* Email */}
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          placeholder="abc@gmail.com"
+          keyboardType="email-address"
+          style={styles.input}
+          value={data.email}
+          onChangeText={(text) => handleChange('email', text)}
+          autoCapitalize="none"
+        />
+      </View>
+
       {/* Phone Number */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Phone Number</Text>
@@ -72,17 +88,27 @@ function Register() {
         />
       </View>
 
-      {/* Password — new field */}
+      {/* Password - with show/hide toggle */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          placeholder="Create a password"
-          style={styles.input}
-          value={data.password}
-          onChangeText={(text) => handleChange('password', text)}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+        <View style={styles.passwordWrapper}>
+          <TextInput
+            placeholder="Create a password"
+            style={styles.passwordInput}
+            value={data.password}
+            onChangeText={(text) => handleChange('password', text)}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword((prev) => !prev)}
+            // Bigger tap target than the text itself, so it's easy to hit
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Company Name */}
@@ -172,6 +198,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 15,
     fontSize: 16,
+  },
+  // Wraps the password TextInput + the Show/Hide button so the button
+  // can sit inside the same bordered box, on the right side
+  passwordWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 55,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DADDE2",
+    borderRadius: 12,
+    paddingRight: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    height: "100%",
+    paddingHorizontal: 15,
+    fontSize: 16,
+  },
+  eyeButton: {
+    paddingLeft: 10,
+  },
+  eyeText: {
+    color: "#1E4D8C",
+    fontWeight: "600",
+    fontSize: 14,
   },
   button: {
     height: 58,
