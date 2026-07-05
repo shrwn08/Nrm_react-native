@@ -48,13 +48,13 @@ function Login() {
     console.log('Logging in with', loginMethod, data.identifier);
   };
 
-  const handleOtpLogin = () => {
-    // Reuse the same OTP screen from registration —
-    // pass phone_no only if we're currently in phone mode
-    navigation.navigate("Otp", {
-      phone_no: loginMethod === 'phone' ? data.identifier : '',
-    });
-  };
+  // const handleOtpLogin = () => {
+  //   // Reuse the same OTP screen from registration —
+  //   // pass phone_no only if we're currently in phone mode
+  //   navigation.navigate("Otp", {
+  //     phone_no: loginMethod === 'phone' ? data.identifier : '',
+  //   });
+  // };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -86,7 +86,7 @@ function Login() {
         </TouchableOpacity>
       </View>
 
-      {/* Identifier field — phone or email depending on toggle */}
+      {/* Identifier field - phone or email depending on toggle */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>
           {loginMethod === 'phone' ? 'Phone number' : 'Email'}
@@ -130,10 +130,10 @@ function Login() {
         <View style={styles.dividerLine} />
       </View>
 
-      {/* OTP login — only really makes sense for phone, but works either way */}
-      <TouchableOpacity style={styles.otpButton} onPress={handleOtpLogin}>
+      {/* OTP login  only really makes sense for phone, but works either way */}
+      {/* <TouchableOpacity style={styles.otpButton} onPress={handleOtpLogin}>
         <Text style={styles.otpButtonText}>Log in with OTP</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <View style={styles.signupRow}>
         <Text style={styles.signupText}>New here? </Text>
