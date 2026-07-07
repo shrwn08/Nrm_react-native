@@ -1,25 +1,21 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { Api } from "../../utils/api";
+import axiosInstance from "../../utils/api";
+import * as SecureStore from "expo-secure-store";
+("");
 import axios from "axios";
 
 const initialState = {
-  user: {
-    fullname: "",
-    email: "",
-    phone_no: "",
-    company_name: "",
-    city: "",
-    password: "",
-  },
+  user: null,
   isLoading: false,
   isError: null,
+  isLoggedIn: false,
 };
 
 export const userRegister = createAsyncThunk(
-  "userRegister",
+  "auth/register",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${Api}/register`, data, {
+      const response = await axiosInstance.post(`/register`, data, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -34,15 +30,19 @@ export const userRegister = createAsyncThunk(
   },
 );
 
-export const userlogin = createAsyncThunk(
-  "userLogin",
+export const userLogin = createAsyncThunk(
+  "auth/login",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${Api}/login`, data, {
+      const response = await axiosInstance.post(`/login`, data, {
         headers: {
           "Content-Type": "application/json",
         },
       });
+
+      //persist the token securely on the device
+
+      await SecureStore.setItemAsync("accessToken", response.data.token);
 
       return response.data;
     } catch (error) {
@@ -53,10 +53,15 @@ export const userlogin = createAsyncThunk(
   },
 );
 
-const registerSlice = createSlice({
+const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {},
+  reducers: {
+    logout: (state) => {
+      state.user = null;
+      state.isLoggedIn = false;
+    },
+  },
   extraReducers: (builder) => {
     //register
     builder
@@ -84,6 +89,7 @@ const registerSlice = createSlice({
         state.isLoading = false;
         state.isError = null;
         state.user = action.payload;
+        state.isLoggedIn = true;
       })
       .addCase(userLogin.rejected, (state, action) => {
         state.isLoading = false;
@@ -92,4 +98,5 @@ const registerSlice = createSlice({
   },
 });
 
+export const { logout } = authSlice.actions;
 export default authSlice.reducer;

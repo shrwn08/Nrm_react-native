@@ -6,7 +6,7 @@ import {
   View,
   TouchableOpacity,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useRoute, useNavigation } from '@react-navigation/native'
 
 // One self-contained block: label, 6-digit boxes, resend row, and a
@@ -143,7 +143,7 @@ function OTP() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider style={styles.container}>
       <Text style={styles.label}>Verify Your Details</Text>
       <Text style={styles.subtext}>
         We've sent separate codes to your phone and email
@@ -172,7 +172,7 @@ function OTP() {
       >
         <Text style={styles.submitText}>Continue</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </SafeAreaProvider>
   )
 }
 

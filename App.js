@@ -5,6 +5,8 @@ import Register from "./src/screens/Register";
 import { Provider } from "react-redux";
 import { store } from "./src/redux/store";
 import Login from "./src/screens/Login";
+import NewRodOrder from "./src/screens/NewRodOrder";
+import Welcome from "./src/screens/Welcome";
 // import OTP from "./src/screens/OTP";
 
 
@@ -17,9 +19,11 @@ export default function App() {
     <Provider store={store}>
     <NavigationContainer>
       <Stack.Navigator>
+      <Stack.Screen name="Home" component={Welcome}  options={{ headerShown: false }}/>
          <Stack.Screen name="Register" component={Register}  options={{ headerShown: false }}/>
          {/* <Stack.Screen name="Otp" component={OTP} options={{headerShown : false}} /> */}
          <Stack.Screen name="Login" component={Login} options={{headerShown : false}} />
+         <Stack.Screen name='NewOrder' component={NewRodOrder} options={{headerShown : false}}  />
       </Stack.Navigator>
     </NavigationContainer>
    </Provider>

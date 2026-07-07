@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
+  
   ScrollView,
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // Static option lists — we can later pull these from a config/API
 const COMPANIES = ['Jindal', 'Rathi'];
@@ -46,7 +48,7 @@ function NewRodOrder() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider style={styles.container}>
       {/* ScrollView so the form doesn't get clipped on smaller screens */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -168,7 +170,7 @@ function NewRodOrder() {
           <Text style={styles.placeOrderText}>Place order</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

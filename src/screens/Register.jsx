@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,15 +12,16 @@ import {
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { userRegister } from "../redux/features/authSlice";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // name (string), not by passing the component directly
 
 function Register() {
   const dispatch = useDispatch();
-  const {isLoading, isError} = useSelector(state => state.auth)
+  const { isLoading, isError } = useSelector((state) => state.auth);
   const navigation = useNavigation();
 
   const [data, setData] = useState({
@@ -44,28 +46,31 @@ function Register() {
   //   navigation.navigate("Otp", { phone_no: data.phone_no, email: data.email });
   // };
 
-
-  const handleOnPress = async (data) =>{
+  const handleOnPress = async (data) => {
     try {
-     await dispatch(userRegister(data)).unwrap();
+      await dispatch(userRegister(data)).unwrap();
       navigation.navigate("Login");
     } catch (error) {
       console.error("Unable to send the register data", error);
     }
-  }
+  };
 
- if (isLoading) {
+  const swtichToLogin = () => {
+    navigation.navigate("Login");
+  };
+
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaProvider style={styles.safeArea}>
         <View style={styles.centered}>
           <Text style={styles.loadingText}>Creating your account...</Text>
         </View>
-      </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaProvider style={styles.safeArea}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -172,16 +177,24 @@ function Register() {
           </View>
 
           {/* Create Account Button */}
-          <TouchableOpacity style={styles.button} onPress={()=>handleOnPress(data)}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => handleOnPress(data)}
+          >
             <Text style={styles.buttonText}>Create Account</Text>
           </TouchableOpacity>
+          <View style={styles.loginRow}>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.loginLink}>Already have an account?</Text>
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.footer}>
             By continuing, you agree to our Terms & Privacy Policy.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -286,6 +299,17 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
+  },
+  loginRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 28,
+  },
+
+  loginLink: {
+    color: "#1E4D8C",
+    fontWeight: "700",
+    fontSize: 14,
   },
   footer: {
     marginTop: 25,

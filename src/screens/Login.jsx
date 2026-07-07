@@ -9,11 +9,13 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
 function Login() {
 
   const navigation = useNavigation();
 
-  // 'phone' or 'email' — controls which keyboard/placeholder we show
+  // 'phone' or 'email' - controls which keyboard/placeholder we show
   // and which field name we send to the backend
   const [loginMethod, setLoginMethod] = useState('phone');
 
@@ -44,8 +46,10 @@ function Login() {
     }
 
     // Send { [loginMethod]: data.identifier, password: data.password }
-    // to your /login endpoint — backend can branch on which key is present
+    // to your /login endpoint - backend can branch on which key is present
     console.log('Logging in with', loginMethod, data.identifier);
+
+    navigation.navigate("NewOrder");
   };
 
   // const handleOtpLogin = () => {
