@@ -16,7 +16,7 @@ const COMPANIES = ['Jindal', 'Rathi'];
 const DIAMETERS = ['8mm', '12mm', '16mm', '20mm', '24mm'];
 
 function NewRodOrder() {
-  // Form state — each piece of the form gets its own state slice so we
+  // Form state - each piece of the form gets its own state slice so we
   // can update fields independently without touching the rest of the form
   const [partyName, setPartyName] = useState('');
   const [company, setCompany] = useState('Jindal');
@@ -94,9 +94,9 @@ function NewRodOrder() {
             />
           ))}
           {/* "+ Add" is a static action chip, not a selectable option */}
-          <TouchableOpacity style={[styles.chip, styles.gridItemChip]}>
+          {/* <TouchableOpacity style={[styles.chip, styles.gridItemChip]}>
             <Text style={styles.chipText}>+ Add</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Quantity */}
@@ -141,26 +141,26 @@ function NewRodOrder() {
         />
         <TextInput
           style={[styles.textInput, styles.stackedInput]}
-          placeholder="Loading point / instructions"
+          placeholder="Shipping address"
           placeholderTextColor="#9CA3AF"
           value={loadingInstructions}
           onChangeText={setLoadingInstructions}
         />
 
-        {/* Order summary card — reflects current selections/inputs */}
+        {/* Order summary card - reflects current selections/inputs */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>
               {company} · {diameter}
             </Text>
             <Text style={styles.summaryValue}>
-              {quantityPrimary ? `${quantityPrimary} tons` : '— tons'}
+              {quantityPrimary ? `${quantityPrimary} tons` : '- tons'}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Truck</Text>
             <Text style={styles.summaryValue}>
-              {truckNumber || '—'}
+              {truckNumber || '-'}
             </Text>
           </View>
         </View>
@@ -174,7 +174,7 @@ function NewRodOrder() {
   );
 }
 
-// Small reusable chip component for the Company/Diameter selectors —
+// Small reusable chip component for the Company/Diameter selectors -
 // keeps the selected/unselected styling logic in one place
 function SelectableChip({ label, selected, onPress, flex, gridItem }) {
   return (
