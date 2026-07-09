@@ -15,6 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { userRegister } from "../redux/features/authSlice";
+import BottomNavbar from "../components/BottomNavbar";
 
 // name (string), not by passing the component directly
 
@@ -192,6 +193,7 @@ function Register() {
             By continuing, you agree to our Terms & Privacy Policy.
           </Text>
         </ScrollView>
+          <BottomNavbar />
       </KeyboardAvoidingView>
     </SafeAreaProvider>
   );

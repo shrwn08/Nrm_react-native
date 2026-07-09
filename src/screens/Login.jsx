@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,53 +11,65 @@ import {
 import { useNavigation } from "@react-navigation/native";
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
+import { userLogin } from "../redux/features/authSlice";
 
 function Login() {
-
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const { isLoading, isError } = useSelector((state) => state.auth);
 
-  // 'phone' or 'email' - controls which keyboard/placeholder we show
+  // 'phone_no' or 'email' - controls which keyboard/placeholder we show
   // and which field name we send to the backend
-  const [loginMethod, setLoginMethod] = useState('phone');
+  const [loginMethod, setLoginMethod] = useState("phone_no");
 
   const [data, setData] = useState({
-    identifier: '', // holds either the phone number or the email
-    password: '',
+    identifier: "", // holds either the phone_no number or the email
+    password: "",
   });
 
   const handleChange = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Switching methods clears the field so a half-typed phone number
+  // Switching methods clears the field so a half-typed phone_no number
   // doesn't get submitted as an email, or vice versa
   const switchMethod = (method) => {
     setLoginMethod(method);
-    handleChange('identifier', '');
+    handleChange("identifier", "");
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!data.identifier.trim()) {
-      alert(`Please enter your ${loginMethod === 'phone' ? 'phone number' : 'email'}`);
+      alert(
+        `Please enter your ${loginMethod === "phone_no" ? "phone number" : "email"}`,
+      );
       return;
     }
     if (!data.password) {
-      alert('Please enter your password');
+      alert("Please enter your password");
       return;
     }
 
-    // Send { [loginMethod]: data.identifier, password: data.password }
-    // to your /login endpoint - backend can branch on which key is present
-    console.log('Logging in with', loginMethod, data.identifier);
+    const payload =
+      loginMethod === "phone_no"
+        ? { phone_no: data.identifier, password: data.password }
+        : { email: data.identifier, password: data.password };
 
-    navigation.navigate("NewOrder");
+    const result = await dispatch(userLogin(payload));
+
+    if (userLogin.rejected.match(result)) {
+      // error is already stored in Redux (isError)
+      // but we also log here for debugging
+      console.log("Login failed:", result.payload);
+    }
   };
 
   // const handleOtpLogin = () => {
   //   // Reuse the same OTP screen from registration —
-  //   // pass phone_no only if we're currently in phone mode
+  //   // pass phone_no_no only if we're currently in phone_no mode
   //   navigation.navigate("Otp", {
-  //     phone_no: loginMethod === 'phone' ? data.identifier : '',
+  //     phone_no_no: loginMethod === 'phone_no' ? data.identifier : '',
   //   });
   // };
 
@@ -70,37 +83,64 @@ function Login() {
       <Text style={styles.title}>Welcome back</Text>
       <Text style={styles.subtitle}>Log in to manage your rod orders</Text>
 
-      {/* Method toggle: Phone / Email */}
+      {/* show API error on screen */}
+      {isError && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{isError}</Text>
+        </View>
+      )}
+
+      {/* Method toggle: phone_no / Email */}
       <View style={styles.toggleRow}>
         <TouchableOpacity
-          style={[styles.toggleButton, loginMethod === 'phone' && styles.toggleButtonActive]}
-          onPress={() => switchMethod('phone')}
+          style={[
+            styles.toggleButton,
+            loginMethod === "phone_no" && styles.toggleButtonActive,
+          ]}
+          onPress={() => switchMethod("phone_no")}
         >
-          <Text style={[styles.toggleText, loginMethod === 'phone' && styles.toggleTextActive]}>
+          <Text
+            style={[
+              styles.toggleText,
+              loginMethod === "phone_no" && styles.toggleTextActive,
+            ]}
+          >
             Phone
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.toggleButton, loginMethod === 'email' && styles.toggleButtonActive]}
-          onPress={() => switchMethod('email')}
+          style={[
+            styles.toggleButton,
+            loginMethod === "email" && styles.toggleButtonActive,
+          ]}
+          onPress={() => switchMethod("email")}
         >
-          <Text style={[styles.toggleText, loginMethod === 'email' && styles.toggleTextActive]}>
+          <Text
+            style={[
+              styles.toggleText,
+              loginMethod === "email" && styles.toggleTextActive,
+            ]}
+          >
             Email
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Identifier field - phone or email depending on toggle */}
+      {/* Identifier field - phone_no or email depending on toggle */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>
-          {loginMethod === 'phone' ? 'Phone number' : 'Email'}
+          {loginMethod === "phone_no" ? "Phone Number" : "Email"}
         </Text>
         <TextInput
-          placeholder={loginMethod === 'phone' ? '98765 43210' : 'you@example.com'}
+          placeholder={
+            loginMethod === "phone_no" ? "98765 xxxxx" : "you@example.com"
+          }
           style={styles.input}
           value={data.identifier}
-          onChangeText={(text) => handleChange('identifier', text)}
-          keyboardType={loginMethod === 'phone' ? 'phone-pad' : 'email-address'}
+          onChangeText={(text) => handleChange("identifier", text)}
+          keyboardType={
+            loginMethod === "phone_no" ? "phone-pad" : "email-address"
+          }
           autoCapitalize="none"
         />
       </View>
@@ -112,7 +152,7 @@ function Login() {
           placeholder="Enter password"
           style={styles.input}
           value={data.password}
-          onChangeText={(text) => handleChange('password', text)}
+          onChangeText={(text) => handleChange("password", text)}
           secureTextEntry
           autoCapitalize="none"
         />
@@ -123,8 +163,16 @@ function Login() {
       </TouchableOpacity>
 
       {/* Log in */}
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Log in</Text>
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Log in</Text>
+        )}
       </TouchableOpacity>
 
       {/* Divider */}
@@ -134,7 +182,7 @@ function Login() {
         <View style={styles.dividerLine} />
       </View>
 
-      {/* OTP login  only really makes sense for phone, but works either way */}
+      {/* OTP login  only really makes sense for phone_no, but works either way */}
       {/* <TouchableOpacity style={styles.otpButton} onPress={handleOtpLogin}>
         <Text style={styles.otpButtonText}>Log in with OTP</Text>
       </TouchableOpacity> */}
@@ -190,6 +238,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 28,
   },
+
+  errorBox: {
+    backgroundColor: "#FBE6E6",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: { color: "#D64545", fontSize: 14, textAlign: "center" },
   toggleRow: {
     flexDirection: "row",
     backgroundColor: "#E9EAEC",
@@ -251,6 +307,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: {
     color: "#FFFFFF",
     fontSize: 18,

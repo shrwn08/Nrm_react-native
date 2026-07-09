@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1C4E80",
   },
 
-  // ── Top blue section ──────────────────────────────
+  // Top blue section 
   topSection: {
     flex: 1,
     alignItems: "center",
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
 
-  // ── Bottom white section ──────────────────────────
+  //  Bottom white section 
   bottomSection: {
     backgroundColor: "#F4F6F8",
     borderTopLeftRadius: 36,

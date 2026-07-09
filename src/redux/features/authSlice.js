@@ -43,7 +43,7 @@ export const userLogin = createAsyncThunk(
       //persist the token securely on the device
 
       await SecureStore.setItemAsync("accessToken", response.data.token);
-
+      console.log(response.data)
       return response.data;
     } catch (error) {
       return rejectWithValue(
