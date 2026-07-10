@@ -1,8 +1,9 @@
 import React from 'react'
+import { Text } from 'react-native'
 
 function HelpSupport() {
   return (
-    <div>HelpSupport</div>
+    <Text>HelpSupport</Text>
   )
 }
 

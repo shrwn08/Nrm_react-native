@@ -1,8 +1,9 @@
 import React from 'react'
+import { Text } from 'react-native'
 
 function EditProfile() {
   return (
-    <div>EditProfile</div>
+    <Text>EditProfile</Text>
   )
 }
 

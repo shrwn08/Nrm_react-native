@@ -1,50 +1,101 @@
 import React, { useState } from 'react';
 import {
-  
   ScrollView,
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Pressable,
 } from 'react-native';
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Static option lists — we can later pull these from a config/API
 const COMPANIES = ['Jindal', 'Rathi'];
 const DIAMETERS = ['8mm', '12mm', '16mm', '20mm', '24mm'];
 
 function NewRodOrder() {
+  const navigation = useNavigation();
+
   // Form state - each piece of the form gets its own state slice so we
   // can update fields independently without touching the rest of the form
   const [partyName, setPartyName] = useState('');
   const [company, setCompany] = useState('Jindal');
-  const [diameter, setDiameter] = useState('12mm');
 
-  // NOTE: the mockup shows two "Tons" boxes side by side. It wasn't clear
-  // from the design what the second one represents (a second diameter's
-  // quantity, a min/max range, etc.), so for now these are two independent
-  // quantity fields. Easy to rename/repurpose once we know the intent.
-  const [quantityPrimary, setQuantityPrimary] = useState('');
-  const [quantitySecondary, setQuantitySecondary] = useState('');
+  // Multi-select diameters. Each entry represents one diameter the user
+  // picked, plus the tons they want for it. Once a diameter is picked its
+  // chip is disabled (can't be picked twice); deleting the row re-enables
+  // the chip so it can be picked again.
+  const [rodLines, setRodLines] = useState([]);
+  // e.g. [{ id: '12mm', diameter: '12mm', quantity: '' }, ...]
 
   const [truckNumber, setTruckNumber] = useState('');
   const [driverInfo, setDriverInfo] = useState('');
-  const [loadingInstructions, setLoadingInstructions] = useState('');
+
+  // Shipping address is now a structured object collected on its own
+  // screen, since orders can go to different places each time.
+  const [shippingAddress, setShippingAddress] = useState(null);
+  // e.g. { addressLine, city, district, state, pincode }
+
+  const isDiameterSelected = (size) =>
+    rodLines.some((line) => line.diameter === size);
+
+  const handleSelectDiameter = (size) => {
+    // Ignore taps on already-selected (disabled) chips
+    if (isDiameterSelected(size)) return;
+
+    setRodLines((prev) => [
+      ...prev,
+      { id: size, diameter: size, quantity: '' },
+    ]);
+  };
+
+  const handleQuantityChange = (id, value) => {
+    setRodLines((prev) =>
+      prev.map((line) =>
+        line.id === id ? { ...line, quantity: value } : line
+      )
+    );
+  };
+
+  const handleDeleteLine = (id) => {
+    // Removing the line also frees up its diameter chip again
+    setRodLines((prev) => prev.filter((line) => line.id !== id));
+  };
+
+  // Opens the Address screen. Passing initialAddress lets the user edit
+  // the address they already picked instead of starting over.
+  const handleOpenAddressScreen = () => {
+    navigation.navigate('Address', {
+      initialAddress: shippingAddress,
+      onSave: (address) => setShippingAddress(address),
+    });
+  };
 
   const handlePlaceOrder = () => {
     // Wire this up to our order-submission logic (API call / local store)
     console.log({
       partyName,
       company,
-      diameter,
-      quantityPrimary,
-      quantitySecondary,
+      rodLines,
       truckNumber,
       driverInfo,
-      loadingInstructions,
+      shippingAddress,
     });
+  };
+
+  // The bottom button does one of two things depending on whether an
+  // address has been confirmed yet: collect the address first, or place
+  // the order once everything (including address) is ready.
+  const handlePrimaryButtonPress = () => {
+    if (!shippingAddress) {
+      handleOpenAddressScreen();
+      return;
+    }
+    handlePlaceOrder();
   };
 
   return (
@@ -80,45 +131,58 @@ function NewRodOrder() {
           ))}
         </View>
 
-        {/* Diameter selector */}
+        {/* Diameter selector - multi-select. Once picked, a chip is
+            disabled until its corresponding quantity row is deleted. */}
         <Text style={styles.label}>Diameter</Text>
         <View style={styles.gridRow}>
-          {DIAMETERS.map((size) => (
-            <SelectableChip
-              key={size}
-              label={size}
-              selected={diameter === size}
-              onPress={() => setDiameter(size)}
-              flex={1}
-              gridItem
-            />
-          ))}
-          {/* "+ Add" is a static action chip, not a selectable option */}
-          {/* <TouchableOpacity style={[styles.chip, styles.gridItemChip]}>
-            <Text style={styles.chipText}>+ Add</Text>
-          </TouchableOpacity> */}
+          {DIAMETERS.map((size) => {
+            const selected = isDiameterSelected(size);
+            return (
+              <SelectableChip
+                key={size}
+                label={size}
+                selected={selected}
+                disabled={selected}
+                onPress={() => handleSelectDiameter(size)}
+                flex={1}
+                gridItem
+              />
+            );
+          })}
         </View>
 
-        {/* Quantity */}
+        {/* Quantity - one row per selected diameter */}
         <Text style={styles.label}>Quantity</Text>
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.textInput, styles.halfInput]}
-            placeholder="Tons"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="numeric"
-            value={quantityPrimary}
-            onChangeText={setQuantityPrimary}
-          />
-          <TextInput
-            style={[styles.textInput, styles.halfInput]}
-            placeholder="Tons"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="numeric"
-            value={quantitySecondary}
-            onChangeText={setQuantitySecondary}
-          />
-        </View>
+        {rodLines.length === 0 && (
+          <Text style={styles.emptyHint}>
+            Pick a diameter above to add a quantity row
+          </Text>
+        )}
+        {rodLines.map((line) => (
+          <View style={[styles.row, styles.quantityRow]} key={line.id}>
+            {/* Read-only field showing which diameter this row is for */}
+            <View style={[styles.textInput, styles.halfInput, styles.diameterDisplay]}>
+              <Text style={styles.diameterDisplayText}>{line.diameter}</Text>
+            </View>
+            <TextInput
+              style={[styles.textInput, styles.halfInput]}
+              placeholder="Tons"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="numeric"
+              value={line.quantity}
+              onChangeText={(value) => handleQuantityChange(line.id, value)}
+            />
+            <Pressable
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                pressed && styles.deleteBtnPressed,
+              ]}
+              onPress={() => handleDeleteLine(line.id)}
+            >
+              <Text style={styles.deleteText}>Delete</Text>
+            </Pressable>
+          </View>
+        ))}
 
         <View style={styles.divider} />
 
@@ -139,35 +203,73 @@ function NewRodOrder() {
           value={driverInfo}
           onChangeText={setDriverInfo}
         />
-        <TextInput
-          style={[styles.textInput, styles.stackedInput]}
-          placeholder="Shipping address"
-          placeholderTextColor="#9CA3AF"
-          value={loadingInstructions}
-          onChangeText={setLoadingInstructions}
-        />
+
+        {/* Shipping address - structured, collected on its own screen since
+            orders can ship to different places each time */}
+        <Text style={styles.label}>Shipping address</Text>
+        {shippingAddress ? (
+          <View style={styles.addressCard}>
+            <View style={styles.addressCardText}>
+              <Text style={styles.addressLine} numberOfLines={2}>
+                {shippingAddress.addressLine}
+              </Text>
+              <Text style={styles.addressMeta}>
+                {shippingAddress.city}, {shippingAddress.district},{' '}
+                {shippingAddress.state} - {shippingAddress.pincode}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={handleOpenAddressScreen}>
+              <Text style={styles.changeAddressText}>Change</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.addAddressButton}
+            onPress={handleOpenAddressScreen}
+          >
+            <Ionicons name="location-outline" size={18} color="#2563EB" />
+            <Text style={styles.addAddressText}>Add shipping address</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Order summary card - reflects current selections/inputs */}
         <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>
-              {company} · {diameter}
-            </Text>
-            <Text style={styles.summaryValue}>
-              {quantityPrimary ? `${quantityPrimary} tons` : '- tons'}
-            </Text>
-          </View>
+          {rodLines.length === 0 ? (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>{company}</Text>
+              <Text style={styles.summaryValue}>- tons</Text>
+            </View>
+          ) : (
+            rodLines.map((line) => (
+              <View style={styles.summaryRow} key={line.id}>
+                <Text style={styles.summaryLabel}>
+                  {company} · {line.diameter}
+                </Text>
+                <Text style={styles.summaryValue}>
+                  {line.quantity ? `${line.quantity} tons` : '- tons'}
+                </Text>
+              </View>
+            ))
+          )}
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Truck</Text>
             <Text style={styles.summaryValue}>
               {truckNumber || '-'}
             </Text>
           </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Ship to</Text>
+            <Text style={styles.summaryValue} numberOfLines={1}>
+              {shippingAddress ? shippingAddress.city : 'Not set'}
+            </Text>
+          </View>
         </View>
 
-        {/* Submit */}
-        <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
-          <Text style={styles.placeOrderText}>Place order</Text>
+        {/* Submit - collects the address first, then places the order */}
+        <TouchableOpacity style={styles.placeOrderButton} onPress={handlePrimaryButtonPress}>
+          <Text style={styles.placeOrderText}>
+            {shippingAddress ? 'Place order' : 'Add shipping address'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaProvider>
@@ -176,17 +278,25 @@ function NewRodOrder() {
 
 // Small reusable chip component for the Company/Diameter selectors -
 // keeps the selected/unselected styling logic in one place
-function SelectableChip({ label, selected, onPress, flex, gridItem }) {
+function SelectableChip({ label, selected, disabled, onPress, flex, gridItem }) {
   return (
     <TouchableOpacity
       style={[
         styles.chip,
         gridItem ? styles.gridItemChip : { flex },
         selected && styles.chipSelected,
+        disabled && styles.chipDisabled,
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+      <Text
+        style={[
+          styles.chipText,
+          selected && styles.chipTextSelected,
+          disabled && styles.chipTextDisabled,
+        ]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -214,16 +324,51 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
+  emptyHint: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
   textInput: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 10,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
     fontSize: 15,
     color: '#111827',
     marginBottom: 16,
+  },
+  diameterDisplay: {
+    justifyContent: 'center',
+  },
+  diameterDisplayText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  quantityRow: {
+    alignItems: 'center',
+  },
+  deleteBtn: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtnPressed: {
+    backgroundColor: '#FEE2E2',
+  },
+  deleteText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#DC2626',
   },
   stackedInput: {
     marginBottom: 12,
@@ -260,6 +405,9 @@ const styles = StyleSheet.create({
     borderColor: '#2563EB',
     backgroundColor: '#EFF6FF',
   },
+  chipDisabled: {
+    opacity: 0.5,
+  },
   chipText: {
     fontSize: 15,
     fontWeight: '700',
@@ -268,10 +416,60 @@ const styles = StyleSheet.create({
   chipTextSelected: {
     color: '#2563EB',
   },
+  chipTextDisabled: {
+    color: '#2563EB',
+  },
   divider: {
     height: 1,
     backgroundColor: '#E5E7EB',
     marginVertical: 8,
+  },
+  addAddressButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 10,
+    paddingVertical: 14,
+    marginBottom: 16,
+  },
+  addAddressText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  addressCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 16,
+  },
+  addressCardText: {
+    flex: 1,
+    marginRight: 12,
+  },
+  addressLine: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  addressMeta: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  changeAddressText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2563EB',
   },
   summaryCard: {
     backgroundColor: '#EEF0F3',

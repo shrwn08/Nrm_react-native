@@ -1,8 +1,9 @@
 import React from 'react'
+import { Text } from 'react-native'
 
 function Notifications() {
   return (
-    <div>Notifications</div>
+    <Text>Notifications</Text>
   )
 }
 

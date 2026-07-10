@@ -1,8 +1,9 @@
 import React from 'react'
+import { Text } from 'react-native'
 
 function Settings() {
   return (
-    <div>Settings</div>
+    <Text>Settings</Text>
   )
 }
 

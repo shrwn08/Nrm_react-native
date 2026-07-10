@@ -1,8 +1,9 @@
 import React from 'react'
+import { Text } from 'react-native'
 
 function ChangePassword() {
   return (
-    <div>ChangePassword</div>
+    <Text>ChangePassword</Text>
   )
 }
 

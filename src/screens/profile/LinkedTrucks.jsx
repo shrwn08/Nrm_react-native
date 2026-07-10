@@ -1,8 +1,9 @@
 import React from 'react'
+import { Text } from 'react-native'
 
 function LinkedTrucks() {
   return (
-    <div>LinkedTrucks</div>
+    <Text>LinkedTrucks</Text>
   )
 }
 

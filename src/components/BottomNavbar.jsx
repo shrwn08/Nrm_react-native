@@ -4,69 +4,64 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing } from "../theme/theme";
 
-
-
-const TABS = [
-  {
-    key: "Home",
-    label: "Home",
-    routeName: "Home",
-    iconActive: "home",
-    iconInactive: "home-outline",
-  },
-  {
-    key: "Orders",
+const TAB_META = {
+  Home: { label: "Home", iconActive: "home", iconInactive: "home-outline" },
+  Orders: {
     label: "Orders",
-    routeName: "Orders",
     iconActive: "receipt",
     iconInactive: "receipt-outline",
   },
-  {
-    key: "Trucks",
+  TruckTracking: {
     label: "Trucks",
-    routeName: "TruckTracking",
     iconActive: "car",
     iconInactive: "car-outline",
   },
-  {
-    key: "Profile",
+  Profile: {
     label: "Profile",
-    routeName: "Profile",
     iconActive: "person",
     iconInactive: "person-outline",
   },
-];
+};
 
-function BottomNavbar({ activeTab }) {
-  const navigation = useNavigation();
-  const route = useRoute();
-
-  const currentTab =
-    activeTab || TABS.find((tab) => tab.routeName === route.name)?.key;
-
-  const handlePress = (tab) => {
-    if (tab.key === currentTab) return;
-    navigation.navigate(tab.routeName);
-  };
-
+function BottomNavbar({ state, descriptors, navigation }) {
   return (
     <View style={styles.container}>
-      {TABS.map((tab) => {
-        const isActive = tab.key === currentTab;
+      {state.routes.map((route, index) => {
+        const meta = TAB_META[route.name];
+        if (!meta) return null; 
+ 
+        const isActive = state.index === index;
+        const { options } = descriptors[route.key];
+ 
+        const handlePress = () => {
+          const event = navigation.emit({
+            type: "tabPress",
+            target: route.key,
+            canPreventDefault: true,
+          });
+ 
+          if (!isActive && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+ 
         return (
           <TouchableOpacity
-            key={tab.key}
+            key={route.key}
             style={styles.tab}
             activeOpacity={0.7}
-            onPress={() => handlePress(tab)}
+            onPress={handlePress}
+            accessibilityRole="button"
+            accessibilityState={isActive ? { selected: true } : {}}
+            accessibilityLabel={options.tabBarAccessibilityLabel || meta.label}
           >
             <Ionicons
-              name={isActive ? tab.iconActive : tab.iconInactive}
+              name={isActive ? meta.iconActive : meta.iconInactive}
               size={24}
               color={isActive ? colors.primary : colors.textMuted}
             />
             <Text style={[styles.label, isActive && styles.labelActive]}>
-              {tab.label}
+              {meta.label}
             </Text>
           </TouchableOpacity>
         );
@@ -74,8 +69,10 @@ function BottomNavbar({ activeTab }) {
     </View>
   );
 }
+ 
 
 export default BottomNavbar;
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
@@ -100,3 +97,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+ 
