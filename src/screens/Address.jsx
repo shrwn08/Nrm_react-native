@@ -12,12 +12,16 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useDispatch, useSelector } from "react-redux";
 
 function Address() {
   const navigation = useNavigation();
   const route = useRoute();
+  const dispatch = useDispatch();
 
   const { onSave, initialAddress } = route.params || {};
+
+  const [addresses, isLoadingAddresses] = useSelector(state => state.address);
 
   const [addressLine, setAddressLine] = useState(
       initialAddress?.addressLine || "",

@@ -7,23 +7,28 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
+import { clearCreateOrderError, createOrder } from '../redux/features/orderSlice';
 
-// Static option lists — we can later pull these from a config/API
-const COMPANIES = ['Jindal', 'Rathi'];
+// Static option lists - we can later pull these from a config/API
+const RODTYPE = ['Jindal', 'Rathi'];
 const DIAMETERS = ['8mm', '12mm', '16mm', '20mm', '24mm'];
 
 function NewRodOrder() {
   const navigation = useNavigation();
+  const dispatch = useDispatch()
 
   // Form state - each piece of the form gets its own state slice so we
   // can update fields independently without touching the rest of the form
   const [partyName, setPartyName] = useState('');
-  const [company, setCompany] = useState('Jindal');
+  const [rodType, setRodType] = useState('Jindal');
 
   // Multi-select diameters. Each entry represents one diameter the user
   // picked, plus the tons they want for it. Once a diameter is picked its
@@ -71,25 +76,85 @@ function NewRodOrder() {
   const handleOpenAddressScreen = () => {
     navigation.navigate('Address', {
       initialAddress: shippingAddress,
-      onSave: (address) => setShippingAddress(address),
+      onSave: (address) => {setShippingAddress(address)
+
+        /*if the picked address came from a saved party and the patry name field is still empty, use it - never overwrie what the user already typed*/
+
+        if(address.party && !partyName.trim()){
+          setPartyName(address)
+        }
+      }
+
+
+
     });
   };
 
   const handlePlaceOrder = () => {
     // Wire this up to our order-submission logic (API call / local store)
-    console.log({
-      partyName,
-      company,
-      rodLines,
-      truckNumber,
-      driverInfo,
-      shippingAddress,
-    });
-  };
+    if(!partyName.trim()){
+      Alert.alert('Missing party name', 'Please enter the party name')
+    }
 
-  // The bottom button does one of two things depending on whether an
-  // address has been confirmed yet: collect the address first, or place
-  // the order once everything (including address) is ready.
+    if(rodLines.length === 0){
+      Alert.alert('No diameters selected', 'Pick at least one diameter and quantity.');
+    }
+
+    const incompleteLine = rodLines.find(
+      (line) => !line.quantity || Number(line.quantity) <= 0,
+    );
+
+    if(incompleteLine){
+      Alert.alert('Missing quantity', `Enter a quantity greater than 0 for ${incompleteLine.diameter}`);
+      return;
+    }
+
+    if(!shippingAddress){
+      Alert.alert('Missing address', 'Please add a shipping address.');
+    }
+
+    if(createOrderError){
+      dispatch(clearCreateOrderError())
+    } 
+
+
+    const payload = {
+      party : partyName.trim(),
+      rodType : rodType,
+      rodLines : rodLines.map((line)=>({
+        diameter : line.diameter,
+        quantity : Number(line.quantity)
+      })),
+      truck : truckNumber.trim() || driverInfo.trim() ? {number : truckNumber.trim(), driverInfo: driverInfo.trim()} : undefined, shippingAddress
+    }
+
+    const result = await dispatch(createOrder(payload));
+
+    if(createOrder.fulfilled.match(result)){
+      Alert.alert('Order Placed', 'Your rod order has been placed successfully.',[
+        {
+          text : 'View orders',
+          onPress : ()=>{
+            resetForm();
+            navigation.navigate('Orders');
+          }
+        }
+      ])
+    }else{
+      Alert.alert('Could not place order', result.payload || 'Please try again.')
+    }
+
+  };
+  function resetForm () {
+    setPartyName('');
+    setRodType('Jindal');
+    setRodLines([]);
+    setTruckNumber('');
+    setDriverInfo('');
+    setShippingAddress(null);
+  }
+
+  /* The bottom button does one of two things depending on whether an address has been confirmed yet: collect the address first, or place the order once everything (including address) is ready.*/
   const handlePrimaryButtonPress = () => {
     if (!shippingAddress) {
       handleOpenAddressScreen();
@@ -108,7 +173,7 @@ function NewRodOrder() {
         <Text style={styles.title}>New rod order</Text>
 
         {/* Party / broker name */}
-        <Text style={styles.label}>Party / broker name</Text>
+        <Text style={styles.label}>Party name</Text>
         <TextInput
           style={styles.textInput}
           placeholder="e.g. Sharma Steel Traders"
@@ -117,15 +182,15 @@ function NewRodOrder() {
           onChangeText={setPartyName}
         />
 
-        {/* Company selector */}
-        <Text style={styles.label}>Company</Text>
+        {/* rodType selector */}
+        <Text style={styles.label}>Type</Text>
         <View style={styles.row}>
-          {COMPANIES.map((name) => (
+          {RODTYPE.map((name) => (
             <SelectableChip
               key={name}
               label={name}
-              selected={company === name}
-              onPress={() => setCompany(name)}
+              selected={rodType === name}
+              onPress={() => setRodType(name)}
               flex={1}
             />
           ))}
@@ -210,7 +275,7 @@ function NewRodOrder() {
         {shippingAddress ? (
           <View style={styles.addressCard}>
             <View style={styles.addressCardText}>
-              <Text style={styles.addressLine} numberOfLines={2}>
+              <Text style={styles.addressLine} numberOfLines={3}>
                 {shippingAddress.addressLine}
               </Text>
               <Text style={styles.addressMeta}>
@@ -236,14 +301,14 @@ function NewRodOrder() {
         <View style={styles.summaryCard}>
           {rodLines.length === 0 ? (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>{company}</Text>
+              <Text style={styles.summaryLabel}>{rodType}</Text>
               <Text style={styles.summaryValue}>- tons</Text>
             </View>
           ) : (
             rodLines.map((line) => (
               <View style={styles.summaryRow} key={line.id}>
                 <Text style={styles.summaryLabel}>
-                  {company} · {line.diameter}
+                  {rodType} · {line.diameter}
                 </Text>
                 <Text style={styles.summaryValue}>
                   {line.quantity ? `${line.quantity} tons` : '- tons'}
@@ -266,17 +331,22 @@ function NewRodOrder() {
         </View>
 
         {/* Submit - collects the address first, then places the order */}
-        <TouchableOpacity style={styles.placeOrderButton} onPress={handlePrimaryButtonPress}>
-          <Text style={styles.placeOrderText}>
+        <TouchableOpacity style={[styles.placeOrderButton, isCreatingOrder && styles.placeOrderButtonDisabled]}
+          onPress={handlePrimaryButtonPress}
+          disabled={isCreatingOrder}>
+          {isCreatingOrder ? (<ActivityIndicator color="#FFFFFF" />):(
+            <Text style={styles.placeOrderText}>
             {shippingAddress ? 'Place order' : 'Add shipping address'}
           </Text>
+          )}
+          
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaProvider>
   );
 }
 
-// Small reusable chip component for the Company/Diameter selectors -
+// Small reusable chip component for the rodType/Diameter selectors -
 // keeps the selected/unselected styling logic in one place
 function SelectableChip({ label, selected, disabled, onPress, flex, gridItem }) {
   return (
