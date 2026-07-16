@@ -99,6 +99,14 @@ const addressSlice = createSlice({
       builder
       .addCase(deleteAddress.pending, (state)=>{
         state.isDeletingAddress = false;
+        state.deleteAddressError = null;
+      })
+      .addCase(deleteAddress.fulfilled, (state, action)=>{
+        state.isDeletingAddress = false;
+        state.addresses = state.addresses.filter((a)=> a._id !== action.payload);
+      })
+      .addCase(deleteAddress.rejected, (state, action)=>{
+        state.isDeletingAddress = false;
         state.deleteAddressError = action.payload;
       });
   },
