@@ -14,8 +14,9 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { clearCreateOrderError, createOrder } from '../redux/features/orderSlice';
+
 
 // Static option lists - we can later pull these from a config/API
 const RODTYPE = ['Jindal', 'Rathi'];
@@ -24,6 +25,7 @@ const DIAMETERS = ['8mm', '12mm', '16mm', '20mm', '24mm'];
 function NewRodOrder() {
   const navigation = useNavigation();
   const dispatch = useDispatch()
+  const {isCreatingOrder} = useSelector(state=> state.order)
 
   // Form state - each piece of the form gets its own state slice so we
   // can update fields independently without touching the rest of the form
@@ -90,7 +92,7 @@ function NewRodOrder() {
     });
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async() => {
     // Wire this up to our order-submission logic (API call / local store)
     if(!partyName.trim()){
       Alert.alert('Missing party name', 'Please enter the party name')

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,17 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
+import { fetchAddresses } from "../redux/features/addressSlice";
+import { isSearchBarAvailableForCurrentPlatform } from "react-native-screens";
 
 function Address() {
   const navigation = useNavigation();
@@ -21,77 +27,90 @@ function Address() {
 
   const { onSave, initialAddress } = route.params || {};
 
-  const [addresses, isLoadingAddresses] = useSelector(state => state.address);
+  const { addresses, isLoadingAddresses } = useSelector(
+    (state) => state.address,
+  );
 
   const [addressLine, setAddressLine] = useState(
-      initialAddress?.addressLine || "",
-    );
-    const [city, setCity] = useState(initialAddress?.city || "");
+    initialAddress?.addressLine || "",
+  );
+  const [city, setCity] = useState(initialAddress?.city || "");
   const [district, setDistrict] = useState(initialAddress?.district || "");
   const [state, setState] = useState(initialAddress?.state || "");
   const [pincode, setPincode] = useState(initialAddress?.pincode || "");
   const [errors, setErrors] = useState({});
 
+  const [selectedParty, setSeletedParty] = useState(
+    initialAddress?.party || null,
+  );
+
   const [isLookingUpPincode, setIsLookingUpPincode] = useState(false);
-  const [pincodeLookupError, setPincodeLookupError] = useState('');
+  const [pincodeLookupError, setPincodeLookupError] = useState("");
 
-  const lastFetchedPincode = useRef('');
+  const lastFetchedPincode = useRef("");
 
-  useEffect(()=>{
-    const  trimmed = pincode.trim();
+  let trimmed;
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchAddresses());
+    }, [dispatch]),
+  );
 
-    if(!/^[1-9][0-9]{5}$/.test(trimmed)){
-        setPincodeLookupError('');
-        return;
+  useEffect(() => {
+    trimmed = pincode.trim();
+
+    if (!/^[1-9][0-9]{5}$/.test(trimmed)) {
+      setPincodeLookupError("");
+      return;
     }
 
-    if(trimmed === lastFetchedPincode.current) return;
+    if (trimmed === lastFetchedPincode.current) return;
 
     let isCancelled = false;
 
+    const lookupPincode = async () => {
+      setIsLookingUpPincode(true);
+      setPincodeLookupError("");
 
-    const lookupPincode = async ()=>{
-        setIsLookingUpPincode(true);
-        setPincodeLookupError('');
-    }
+      try {
+        const response = await fetch(
+          `https://api.postalpincode.in/pincode/${trimmed}`,
+        );
 
-
-    try{
-        const response = await fetch(`https://api.postalpincode.in/pincode/${trimmed}`);
-        
         const data = await response.json();
 
         const result = data?.[0];
 
-        if(isCancelled) return;
+        if (isCancelled) return;
 
-
-        if(result?.Status === "Success" && result.PostOffice?.length){
-            const postoffice =result.PostOffice[0];
-            setCity(postoffice.Name || '');
-            setDistrict(postoffice.District || '' );
-            setState(postoffice.state || '');
-            lastFetchedPincode.current = trimmed;
-        }else{
-            setPincodeLookupError('No address found for this pincode');
+        if (result?.Status === "Success" && result.PostOffice?.length) {
+          const postoffice = result.PostOffice[0];
+          setCity(postoffice.Name || "");
+          setDistrict(postoffice.District || "");
+          setState(postoffice.State || "");
+          lastFetchedPincode.current = trimmed;
+        } else {
+          setPincodeLookupError("No address found for this pincode");
         }
-    }catch(error){
-        if(!isCancelled){
-            setPincodeLookupError("Could not look up pincode. Check your Connection")
+      } catch (error) {
+        if (!isCancelled) {
+          setPincodeLookupError(
+            "Could not look up pincode. Check your Connection",
+          );
         }
-    }finally{
-        if(!isCancelled){
-            setIsLookingUpPincode(false);
+      } finally {
+        if (!isCancelled) {
+          setIsLookingUpPincode(false);
         }
-    }
+      }
+    };
 
     lookupPincode();
 
-    return ()=>{
-        isCancelled = true;
+    return () => {
+      isCancelled = true;
     };
-
-  },[pincode])
+  }, [pincode]);
 
   const validate = () => {
     const nextErrors = {};
@@ -106,6 +125,17 @@ function Address() {
     return Object.keys(nextErrors).length === 0;
   };
 
+  const handleSelectSavedParty = (saved) => {
+    setAddressLine(saved.addressLine || "");
+    setCity(saved.city || "");
+    setDistrict(saved.district || "");
+    setState(saved.state || "");
+    setPincode(saved.pincode || "");
+    setSelectedParty(saved.party || saved.label || null);
+    setErrors({});
+    lastFetchedPincode.current = saved.pincode || "";
+  };
+
   const handleConfirm = () => {
     if (!validate()) return;
 
@@ -115,6 +145,7 @@ function Address() {
       district: district.trim(),
       state: state.trim(),
       pincode: pincode.trim(),
+      party: selectedParty || undefined,
     };
 
     // Hand the address back to NewRodOrder and close this screen
@@ -139,13 +170,64 @@ function Address() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {addresses.length > 0 && (
+          <>
+            <Text style={styles.label}>Saved parties</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.savedRow}
+            >
+              {addresses.map((saved) => (
+                <TouchableOpacity
+                  key={saved._id}
+                  style={[
+                    styles.savedChip,
+                    isSelected && styles.savedChipSelected,
+                  ]}
+                  onPress={() => handleSelectSavedParty(saved)}
+                >
+                  <Text
+                    style={[
+                      styles.savedChipText,
+                      isSelected && styles.savedChipTextSelected,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.savedChipSubtext,
+                      isSelected && styles.savedChipSelected,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {saved.city}, {saved.state}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
+
+        {isLoadingAddresses && addresses.length === 0 ? (
+          <ActivityIndicator
+            size="small"
+            color="#2563eb"
+            style={{ marginBottom: 16 }}
+          />
+        ) : null}
         <Text style={styles.label}>Address</Text>
         <TextInput
           style={[styles.textInput, styles.multilineInput]}
           placeholder="House / street / landmark"
           placeholderTextColor="#9CA3AF"
           value={addressLine}
-          onChangeText={setAddressLine}
+          onChangeText={(v) => {
+            setAddressLine(v);
+            setSeletedParty(null);
+          }}
           multiline
         />
         {errors.addressLine ? (
@@ -161,26 +243,34 @@ function Address() {
             keyboardType="number-pad"
             maxLength={6}
             value={pincode}
-            onChangeText={(value) => setPincode(value.replace(/[^0-9]/g, ''))}
+            onChangeText={(value) => setPincode(value.replace(/[^0-9]/g, ""))}
           />
-            {isLookingUpPincode ? (
-            <ActivityIndicator size="small" color="#2563EB" style={styles.pincodeSpinner} />
+          {isLookingUpPincode ? (
+            <ActivityIndicator
+              size="small"
+              color="#2563EB"
+              style={styles.pincodeSpinner}
+            />
           ) : null}
         </View>
-           {errors.pincode ? <Text style={styles.errorText}>{errors.pincode}</Text> : null}
+        {errors.pincode ? (
+          <Text style={styles.errorText}>{errors.pincode}</Text>
+        ) : null}
 
-           {pincodeLookupError ? (
+        {pincodeLookupError ? (
           <Text style={styles.warningText}>{pincodeLookupError}</Text>
         ) : null}
 
         {!errors.pincode && !pincodeLookupError && city ? (
-          <Text style={styles.hintText}>City, district and state filled from pincode</Text>
+          <Text style={styles.hintText}>
+            City, district and state filled from pincode
+          </Text>
         ) : null}
 
         <Text style={styles.label}>City</Text>
         <TextInput
           style={styles.textInput}
-         placeholder="Auto-filled from pincode, or enter manually"
+          placeholder="Auto-filled from pincode, or enter manually"
           placeholderTextColor="#9CA3AF"
           value={city}
           onChangeText={setCity}
@@ -248,6 +338,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
+  savedRow: { gap: 10, paddingBottom: 4, marginBottom: 16 },
+  savedChip: {
+    minWidth: 140,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  savedChipSelected: { borderColor: "#2563EB", backgroundColor: "#EFF6FF" },
+  savedChipText: { fontSize: 14, fontWeight: "700", color: "#111827" },
+  savedChipSubtext: { fontSize: 12, color: "#6B7280", marginTop: 2 },
+  savedChipTextSelected: { color: "#2563EB" },
   textInput: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -262,6 +366,21 @@ const styles = StyleSheet.create({
   multilineInput: {
     minHeight: 80,
     textAlignVertical: "top",
+  },
+  pincodeRow: { flexDirection: "row", alignItems: "center" },
+  pincodeInput: { flex: 1 },
+  pincodeSpinner: { marginLeft: 10, marginBottom: 16 },
+  warningText: {
+    fontSize: 13,
+    color: "#B45309",
+    marginTop: -12,
+    marginBottom: 16,
+  },
+  hintText: {
+    fontSize: 13,
+    color: "#059669",
+    marginTop: -12,
+    marginBottom: 16,
   },
   errorText: {
     fontSize: 13,
