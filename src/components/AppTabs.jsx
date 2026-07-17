@@ -14,6 +14,7 @@ function AppTabs(){
             <Tab.Screen name="Home" component={NewRodOrder} />
             <Tab.Screen name="Orders" component={OrderList}/>
             <Tab.Screen name="Address" component={Address} />
+            
         </Tab.Navigator>
     )
 }

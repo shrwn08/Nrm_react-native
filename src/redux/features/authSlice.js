@@ -9,6 +9,7 @@ const initialState = {
   isLoading: false,
   isError: null,
   isLoggedIn: false,
+  isBootstrapping: true,
 };
 
 export const userRegister = createAsyncThunk(
@@ -43,11 +44,33 @@ export const userLogin = createAsyncThunk(
       //persist the token securely on the device
 
       await SecureStore.setItemAsync("accessToken", response.data.token);
-      console.log(response.data)
       return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || error.message || "Login Failed",
+      );
+    }
+  },
+);
+
+export const restoreSession = createAsyncThunk(
+  "auth/restoreSession",
+  async (__BUNDLE_START_TIME__, { rejectWithValue }) => {
+    try {
+      const token = await SecureStore.getItemAsync("accessToken");
+      if (!token) {
+        return rejectWithValue("No stored session");
+      }
+
+      const response = await axiosInstance.get("/me");
+      return response.data.user;
+    } catch (error) {
+      if (error.response?.status === 401) {
+        // only clear the token on an actual auth rejection
+        await SecureStore.deleteItemAsync("accessToken");
+      }
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Session expired",
       );
     }
   },
@@ -94,6 +117,22 @@ const authSlice = createSlice({
       .addCase(userLogin.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = action.payload;
+      });
+
+    //restore session
+    builder
+      .addCase(restoreSession.pending, (state) => {
+        state.isBootstrapping = true;
+      })
+      .addCase(restoreSession.fulfilled, (state, action) => {
+        state.isBootstrapping = false;
+        state.user = action.payload;
+        state.isLoggedIn = true;
+      })
+      .addCase(restoreSession.rejected, (state) => {
+        state.isBootstrapping = false;
+        state.user = null;
+        state.isLoggedIn = false;
       });
   },
 });

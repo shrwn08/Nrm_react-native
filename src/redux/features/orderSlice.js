@@ -23,6 +23,7 @@ export const createOrder = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post("/orders", data);
+        console.log(response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(

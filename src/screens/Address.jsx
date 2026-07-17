@@ -17,7 +17,10 @@ import {
 } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAddresses } from "../redux/features/addressSlice";
+import {
+  fetchAddresses,
+  setSelectedShippingAddress,
+} from "../redux/features/addressSlice";
 import { isSearchBarAvailableForCurrentPlatform } from "react-native-screens";
 
 function Address() {
@@ -25,7 +28,7 @@ function Address() {
   const route = useRoute();
   const dispatch = useDispatch();
 
-  const { onSave, initialAddress } = route.params || {};
+  const { initialAddress } = route.params || {};
 
   const { addresses, isLoadingAddresses } = useSelector(
     (state) => state.address,
@@ -149,7 +152,7 @@ function Address() {
     };
 
     // Hand the address back to NewRodOrder and close this screen
-    onSave?.(address);
+    dispatch(setSelectedShippingAddress(address));
     navigation.goBack();
   };
 

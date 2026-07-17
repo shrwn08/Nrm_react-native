@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -12,10 +12,11 @@ import {
 } from 'react-native';
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCreateOrderError, createOrder } from '../redux/features/orderSlice';
+import { clearSelectedShippingAddress, selectedShippingAddress } from '../redux/features/addressSlice'; 
 
 
 // Static option lists - we can later pull these from a config/API
@@ -24,8 +25,9 @@ const DIAMETERS = ['8mm', '12mm', '16mm', '20mm', '24mm'];
 
 function NewRodOrder() {
   const navigation = useNavigation();
-  const dispatch = useDispatch()
-  const {isCreatingOrder} = useSelector(state=> state.order)
+  const route = useRoute();
+  const dispatch = useDispatch();
+  const {isCreatingOrder,  createOrderError} = useSelector(state=> state.order)
 
   // Form state - each piece of the form gets its own state slice so we
   // can update fields independently without touching the rest of the form
@@ -46,6 +48,18 @@ function NewRodOrder() {
   // screen, since orders can go to different places each time.
   const [shippingAddress, setShippingAddress] = useState(null);
   // e.g. { addressLine, city, district, state, pincode }
+
+  useEffect(()=>{
+     if (!selectedShippingAddress) return;
+
+     setShippingAddress(selectedShippingAddress);
+
+      if (selectedShippingAddress.party && !partyName.trim()) {
+      setPartyName(selectedShippingAddress.party);
+    }
+
+    dispatch(clearSelectedShippingAddress());
+  },[selectedShippingAddress])
 
   const isDiameterSelected = (size) =>
     rodLines.some((line) => line.diameter === size);
@@ -77,29 +91,20 @@ function NewRodOrder() {
   // the address they already picked instead of starting over.
   const handleOpenAddressScreen = () => {
     navigation.navigate('Address', {
-      initialAddress: shippingAddress,
-      onSave: (address) => {setShippingAddress(address)
-
-        /*if the picked address came from a saved party and the patry name field is still empty, use it - never overwrie what the user already typed*/
-
-        if(address.party && !partyName.trim()){
-          setPartyName(address)
-        }
-      }
-
-
-
-    });
+      initialAddress : shippingAddress
+    })
   };
 
   const handlePlaceOrder = async() => {
     // Wire this up to our order-submission logic (API call / local store)
     if(!partyName.trim()){
-      Alert.alert('Missing party name', 'Please enter the party name')
+      Alert.alert('Missing party name', 'Please enter the party name');
+      return;
     }
 
     if(rodLines.length === 0){
       Alert.alert('No diameters selected', 'Pick at least one diameter and quantity.');
+      return;
     }
 
     const incompleteLine = rodLines.find(
@@ -113,6 +118,7 @@ function NewRodOrder() {
 
     if(!shippingAddress){
       Alert.alert('Missing address', 'Please add a shipping address.');
+      return;
     }
 
     if(createOrderError){
