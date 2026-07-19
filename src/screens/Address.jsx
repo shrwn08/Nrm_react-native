@@ -43,7 +43,7 @@ function Address() {
   const [pincode, setPincode] = useState(initialAddress?.pincode || "");
   const [errors, setErrors] = useState({});
 
-  const [selectedParty, setSeletedParty] = useState(
+  const [selectedParty, setSelectedParty] = useState(
     initialAddress?.party || null,
   );
 
@@ -181,8 +181,11 @@ function Address() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.savedRow}
             >
-              {addresses.map((saved) => (
-                <TouchableOpacity
+              {addresses.map((saved) => {
+                const isSelected = !!selectedParty && saved.party === selectedParty;
+                const name = saved.party || saved.label || "Saved address";
+                return (
+                  <TouchableOpacity
                   key={saved._id}
                   style={[
                     styles.savedChip,
@@ -209,7 +212,9 @@ function Address() {
                     {saved.city}, {saved.state}
                   </Text>
                 </TouchableOpacity>
-              ))}
+                )
+                
+              })}
             </ScrollView>
           </>
         )}
@@ -229,7 +234,7 @@ function Address() {
           value={addressLine}
           onChangeText={(v) => {
             setAddressLine(v);
-            setSeletedParty(null);
+            setSelectedParty(null);
           }}
           multiline
         />

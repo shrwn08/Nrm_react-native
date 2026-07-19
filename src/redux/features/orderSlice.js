@@ -6,7 +6,7 @@ import {
 import axiosInstance from "../../utils/api";
 
 const initialState = {
-  order: [],
+  orders: [],
   isLoadingOrders: false,
   ordersError: null,
 
@@ -58,7 +58,7 @@ export const fetchOrders = createAsyncThunk(
 
 export const fetchOrderById = createAsyncThunk(
   "order/fetchOne",
-  async (OrderId, { rejectWithValue }) => {
+  async (orderId, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get(`/orders/${orderId}`);
       return response.data;

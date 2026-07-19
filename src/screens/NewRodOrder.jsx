@@ -16,7 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCreateOrderError, createOrder } from '../redux/features/orderSlice';
-import { clearSelectedShippingAddress, selectedShippingAddress } from '../redux/features/addressSlice'; 
+import { clearSelectedShippingAddress} from '../redux/features/addressSlice'; 
 
 
 // Static option lists - we can later pull these from a config/API
@@ -27,7 +27,8 @@ function NewRodOrder() {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
-  const {isCreatingOrder,  createOrderError} = useSelector(state=> state.order)
+  const {isCreatingOrder,  createOrderError} = useSelector(state=> state.order);
+  const {selectedShippingAddress} = useSelector(state=> state.address)
 
   // Form state - each piece of the form gets its own state slice so we
   // can update fields independently without touching the rest of the form
