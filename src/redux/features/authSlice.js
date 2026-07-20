@@ -76,6 +76,21 @@ export const restoreSession = createAsyncThunk(
   },
 );
 
+//update Profile
+export const updateProfile = createAsyncThunk(
+  "auth/updateProfile",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch("/me", data);
+      return response.data.user;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to update profile",
+      );
+    }
+  },
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -133,6 +148,21 @@ const authSlice = createSlice({
         state.isBootstrapping = false;
         state.user = null;
         state.isLoggedIn = false;
+      });
+
+      //  update profile
+    builder
+      .addCase(updateProfile.pending, (state) => {
+        state.isUpdatingProfile = true;
+        state.updateProfileError = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.isUpdatingProfile = false;
+        state.user = { ...state.user, ...action.payload };
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.isUpdatingProfile = false;
+        state.updateProfileError = action.payload;
       });
   },
 });
