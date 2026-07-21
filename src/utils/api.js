@@ -1,7 +1,8 @@
 import axios from "axios";
 import * as secureStore from "expo-secure-store";
 
-export const Api = "http://192.168.29.134:3000/api";
+// export const Api = "http://192.168.29.134:3000/api";
+export const Api = "https://nrm-rn-backend.onrender.com/api"
 
 const axiosInstance = axios.create({baseURL : Api, timeout: 10000});
 

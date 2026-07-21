@@ -11,7 +11,7 @@ const initialState = {
   lastCreateAddress: null,
 
   isDeletingAddress: false,
-  daleteAddressError: null,
+  deleteAddressError: null,
 
   selectedShippingAddress: null,
 };
@@ -39,7 +39,7 @@ export const createAddress = createAsyncThunk(
       const response = await axiosInstance.post("/address", data);
       return response.data.address;
     } catch (error) {
-      rejectWithValue(
+      return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
           "Failed to save address",
@@ -115,7 +115,7 @@ const addressSlice = createSlice({
     //delete address
     builder
       .addCase(deleteAddress.pending, (state) => {
-        state.isDeletingAddress = false;
+        state.isDeletingAddress = true;
         state.deleteAddressError = null;
       })
       .addCase(deleteAddress.fulfilled, (state, action) => {

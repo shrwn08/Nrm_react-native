@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import * as SecureStore from 'expo-secure-store'
 import { logout } from '../redux/features/authSlice'
 import { colors, radius, spacing, typography } from '../theme/theme'
+import ChangePassword from './profile/ChangePassword'
 
 const MENU_ITEMS = [
   { label: 'Edit profile', icon: 'person-outline', screen: 'EditProfile' },
