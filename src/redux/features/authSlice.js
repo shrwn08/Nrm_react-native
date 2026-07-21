@@ -13,6 +13,8 @@ const initialState = {
 
   isUpdatingProfile: false, 
   updateProfileError: null,
+  isChangingPassword: false, 
+  changePasswordError: null,
 };
 
 export const userRegister = createAsyncThunk(
@@ -94,6 +96,26 @@ export const updateProfile = createAsyncThunk(
   },
 );
 
+
+//Change password
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch("/change-password", data);
+      if (response.data?.message === "Current password is incorrect") {
+        return rejectWithValue(response.data.message);
+      }
+      return response.data.message;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to change password",
+      );
+    }
+  },
+);
+
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -169,6 +191,20 @@ const authSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.isUpdatingProfile = false;
         state.updateProfileError = action.payload;
+      });
+
+      // changed - change password
+    builder
+      .addCase(changePassword.pending, (state) => {
+        state.isChangingPassword = true;
+        state.changePasswordError = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.isChangingPassword = false;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.isChangingPassword = false;
+        state.changePasswordError = action.payload;
       });
   },
 });
