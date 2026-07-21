@@ -10,6 +10,9 @@ const initialState = {
   isError: null,
   isLoggedIn: false,
   isBootstrapping: true,
+
+  isUpdatingProfile: false, 
+  updateProfileError: null,
 };
 
 export const userRegister = createAsyncThunk(
@@ -99,6 +102,9 @@ const authSlice = createSlice({
       state.user = null;
       state.isLoggedIn = false;
     },
+    clearUpdateProfileError: (state) => { 
+      state.updateProfileError = null;
+    },
   },
   extraReducers: (builder) => {
     //register
@@ -126,7 +132,7 @@ const authSlice = createSlice({
       .addCase(userLogin.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isError = null;
-        state.user = action.payload;
+        state.user = action.payload.user; //action.payload.user
         state.isLoggedIn = true;
       })
       .addCase(userLogin.rejected, (state, action) => {
@@ -167,5 +173,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, clearUpdateProfileError } = authSlice.actions;
 export default authSlice.reducer;
