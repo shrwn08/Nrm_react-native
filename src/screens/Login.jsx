@@ -23,6 +23,8 @@ function Login() {
   // and which field name we send to the backend
   const [loginMethod, setLoginMethod] = useState("phone_no");
 
+   const [showPassword, setShowPassword] = useState(false);
+
   const [data, setData] = useState({
     identifier: "", // holds either the phone_no number or the email
     password: "",
@@ -74,6 +76,12 @@ function Login() {
   // };
 
   return (
+     <SafeAreaProvider style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Logo placeholder */}
       <View style={styles.logoCircle}>
@@ -156,9 +164,16 @@ function Login() {
           secureTextEntry
           autoCapitalize="none"
         />
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword((prev) => !prev)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.eyeText}>{showPassword ? "Hide" : "Show"}</Text>
+          </TouchableOpacity>
       </View>
 
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
         <Text style={styles.forgotPassword}>Forgot password?</Text>
       </TouchableOpacity>
 
@@ -194,6 +209,8 @@ function Login() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+     </KeyboardAvoidingView>
+    </SafeAreaProvider>
   );
 }
 
